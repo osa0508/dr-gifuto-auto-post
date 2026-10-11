@@ -151,7 +151,7 @@ def main():
 
     print(f"queue.json を更新しました（{next_post['id']} を posted=true に）")
 
-    try_extend_token(access_token)
+    
 
 
 if __name__ == "__main__":
