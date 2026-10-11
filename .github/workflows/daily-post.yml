@@ -1,0 +1,47 @@
+name: Daily Instagram Post
+
+on:
+  schedule:
+    # 毎日 20:00 JST (= 11:00 UTC) に実行
+    - cron: "0 11 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run daily post script
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          PAGES_BASE_URL: https://osa0508.github.io/dr-gifuto-auto-post
+        run: python post_daily.py
+
+      - name: Commit updated queue.json
+        run: |
+          git config user.name "dr-gifuto-auto-post bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add queue.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "chore: mark post as published [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push && break
+            echo "push failed, retrying ($i)..."
+            sleep 5
+          done
